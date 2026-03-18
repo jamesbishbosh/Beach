@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     if (dbError) {
       console.error("Supabase insert error:", dbError.message, dbError.code, dbError.details);
       return NextResponse.json(
-        { error: "Failed to save enquiry" },
+        { error: `Failed to save enquiry: ${dbError.message}` },
         { status: 500 }
       );
     }

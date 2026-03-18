@@ -39,12 +39,10 @@ export default function Home() {
           <span className="pill mb-6 sm:mb-8">New site coming soon</span>
 
           <h1 className="font-[family-name:var(--font-heading)] text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight max-w-4xl leading-[1.1] uppercase">
-            We put sand where
-            <br />
-            it doesn&apos;t belong.
+            Sand. Spectacle. Sport.
           </h1>
           <p className="mt-4 sm:mt-6 text-sm sm:text-lg text-white/60 max-w-xl px-2">
-            Beach builds, brand activations and sport environments across the UK.
+            Beach builds, brand experiences and sport infrastructure.
           </p>
           <button
             onClick={() => setModalOpen(true)}
