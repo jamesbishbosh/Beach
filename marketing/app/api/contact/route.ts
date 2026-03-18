@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
     // Write to Supabase
     const supabase = createServiceClient();
-    const { error: dbError } = await supabase.from("contacts").insert({
+    const { error: dbError } = await supabase.from("enquiry_submissions").insert({
       full_name: body.fullName.trim(),
       email: body.email.trim(),
       phone: body.phone?.trim() || null,
