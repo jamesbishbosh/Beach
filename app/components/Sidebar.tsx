@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 const navItems = [
   {
@@ -55,28 +56,33 @@ interface SidebarProps {
 export default function Sidebar({ userEmail }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch {
+      // Continue to login even if signOut fails
+    }
     router.push("/login");
   };
 
-  return (
-    <aside className="fixed left-0 top-0 bottom-0 w-60 bg-brand-black flex flex-col">
-      {/* Logo */}
+  const navContent = (
+    <>
       <div className="px-6 py-6">
         <Image src="/logo.png" alt="Beach Events" width={110} height={30} />
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 space-y-1">
+      <nav className="flex-1 px-3 space-y-1" aria-label="Dashboard navigation">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setMobileOpen(false)}
+              aria-current={isActive ? "page" : undefined}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                 isActive
                   ? "bg-brand-teal/10 text-brand-teal"
@@ -90,7 +96,6 @@ export default function Sidebar({ userEmail }: SidebarProps) {
         })}
       </nav>
 
-      {/* Bottom */}
       <div className="px-6 py-4 border-t border-white/5">
         <p className="text-xs text-white/30 truncate mb-2">{userEmail}</p>
         <button
@@ -100,6 +105,52 @@ export default function Sidebar({ userEmail }: SidebarProps) {
           Sign out
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile hamburger */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 flex items-center justify-center bg-brand-black/90 backdrop-blur rounded-lg border border-white/10"
+        aria-label="Open menu"
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth="1.5">
+          <path d="M3 5h14M3 10h14M3 15h14" />
+        </svg>
+      </button>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-40 bg-black/60"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <aside
+        className={`lg:hidden fixed left-0 top-0 bottom-0 w-64 bg-brand-black z-50 flex flex-col transform transition-transform duration-200 ease-out ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="absolute top-4 right-3 w-10 h-10 flex items-center justify-center text-white/40 hover:text-white"
+          aria-label="Close menu"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M4 4l12 12M16 4L4 16" />
+          </svg>
+        </button>
+        {navContent}
+      </aside>
+
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-60 bg-brand-black flex-col">
+        {navContent}
+      </aside>
+    </>
   );
 }

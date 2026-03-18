@@ -1,15 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AuthCard from "@/components/AuthCard";
 import { createClient } from "@/lib/supabase";
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("error") === "not_authorised") {
+      setError("You are not authorised to access this application.");
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +41,6 @@ export default function LoginPage() {
         return;
       }
 
-      // Store email for verify page
       sessionStorage.setItem("otp_email", email.trim());
       router.push("/verify");
     } catch {
@@ -60,6 +66,8 @@ export default function LoginPage() {
           <input
             type="email"
             id="email"
+            required
+            aria-required="true"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="example@beach-events.co.uk"
@@ -67,12 +75,12 @@ export default function LoginPage() {
           />
         </div>
 
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-red-500" role="alert">{error}</p>}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-brand-teal hover:bg-brand-teal-light text-white font-semibold py-3 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-brand-teal hover:bg-brand-teal-light text-white font-semibold py-3 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-brand-teal focus:ring-offset-2"
         >
           {loading ? "Sending..." : "Request One-Time Pin"}
         </button>
@@ -83,5 +91,13 @@ export default function LoginPage() {
         Privacy Policy.
       </p>
     </AuthCard>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

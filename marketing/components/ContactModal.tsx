@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const PROJECT_TYPES = [
   "Beach Build",
@@ -35,6 +35,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
     budget: "",
     message: "",
   });
+  const modalRef = useRef<HTMLDivElement>(null);
 
   const resetForm = useCallback(() => {
     setFormData({
@@ -49,18 +50,48 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
     setErrorMessage("");
   }, []);
 
-  // Close on escape
+  // Close on escape + focus trapping
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+    if (!isOpen) return;
+
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+
+      // Focus trap
+      if (e.key === "Tab" && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
-      document.body.style.overflow = "hidden";
-    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    // Focus first input on open
+    const timer = setTimeout(() => {
+      const firstInput = modalRef.current?.querySelector<HTMLElement>("input");
+      firstInput?.focus();
+    }, 50);
+
     return () => {
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
+      clearTimeout(timer);
     };
   }, [isOpen, onClose]);
 
@@ -112,22 +143,30 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
 
   if (!isOpen) return null;
 
+  const inputClass =
+    "w-full bg-white/5 border border-white/10 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-white placeholder:text-white/25 transition-colors";
+  const selectClass =
+    "w-full bg-white/5 border border-white/10 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-white transition-colors appearance-none";
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop bg-black/80"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 modal-backdrop bg-black/80"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
       role="dialog"
       aria-modal="true"
-      aria-label="Contact form"
+      aria-labelledby="modal-title"
     >
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto modal-scroll bg-[#111] border border-white/10 rounded-2xl p-8 sm:p-10">
+      <div
+        ref={modalRef}
+        className="relative w-full sm:max-w-lg max-h-[95vh] sm:max-h-[90vh] overflow-y-auto modal-scroll bg-[#111] border-t sm:border border-white/10 rounded-t-2xl sm:rounded-2xl p-6 sm:p-10"
+      >
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
-          aria-label="Close"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 w-10 h-10 flex items-center justify-center text-white/40 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-brand-teal rounded-lg"
+          aria-label="Close dialog"
         >
           <svg
             width="20"
@@ -142,7 +181,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
         </button>
 
         {formState === "success" ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12" role="status" aria-live="polite">
             <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-brand-teal/20 flex items-center justify-center">
               <svg
                 width="24"
@@ -161,58 +200,50 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
           </div>
         ) : (
           <>
-            <h2 className="text-2xl font-semibold mb-1">Get in touch</h2>
-            <p className="text-white/50 text-sm mb-8">
+            <h2 id="modal-title" className="text-xl sm:text-2xl font-semibold mb-1">
+              Get in touch
+            </h2>
+            <p className="text-white/50 text-sm mb-6 sm:mb-8">
               Tell us about your event and we&apos;ll get back to you.
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Full Name */}
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               <div>
-                <label
-                  htmlFor="fullName"
-                  className="block text-sm text-white/60 mb-1.5"
-                >
-                  Full Name <span className="text-brand-teal">*</span>
+                <label htmlFor="fullName" className="block text-sm text-white/60 mb-1.5">
+                  Full Name <span className="text-brand-teal" aria-hidden="true">*</span>
                 </label>
                 <input
                   type="text"
                   id="fullName"
                   name="fullName"
                   required
+                  aria-required="true"
                   value={formData.fullName}
                   onChange={handleChange}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-white/25 transition-colors"
+                  className={inputClass}
                   placeholder="Your name"
                 />
               </div>
 
-              {/* Email */}
               <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm text-white/60 mb-1.5"
-                >
-                  Email <span className="text-brand-teal">*</span>
+                <label htmlFor="email" className="block text-sm text-white/60 mb-1.5">
+                  Email <span className="text-brand-teal" aria-hidden="true">*</span>
                 </label>
                 <input
                   type="email"
                   id="email"
                   name="email"
                   required
+                  aria-required="true"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-white/25 transition-colors"
+                  className={inputClass}
                   placeholder="you@company.com"
                 />
               </div>
 
-              {/* Phone */}
               <div>
-                <label
-                  htmlFor="phone"
-                  className="block text-sm text-white/60 mb-1.5"
-                >
+                <label htmlFor="phone" className="block text-sm text-white/60 mb-1.5">
                   Phone
                 </label>
                 <input
@@ -221,17 +252,13 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-white/25 transition-colors"
+                  className={inputClass}
                   placeholder="Optional"
                 />
               </div>
 
-              {/* Project Type */}
               <div>
-                <label
-                  htmlFor="projectType"
-                  className="block text-sm text-white/60 mb-1.5"
-                >
+                <label htmlFor="projectType" className="block text-sm text-white/60 mb-1.5">
                   Project type
                 </label>
                 <select
@@ -239,25 +266,17 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                   name="projectType"
                   value={formData.projectType}
                   onChange={handleChange}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white transition-colors appearance-none"
+                  className={selectClass}
                 >
-                  <option value="" className="bg-[#111]">
-                    Select...
-                  </option>
+                  <option value="" className="bg-[#111]">Select...</option>
                   {PROJECT_TYPES.map((type) => (
-                    <option key={type} value={type} className="bg-[#111]">
-                      {type}
-                    </option>
+                    <option key={type} value={type} className="bg-[#111]">{type}</option>
                   ))}
                 </select>
               </div>
 
-              {/* Budget */}
               <div>
-                <label
-                  htmlFor="budget"
-                  className="block text-sm text-white/60 mb-1.5"
-                >
+                <label htmlFor="budget" className="block text-sm text-white/60 mb-1.5">
                   Approximate budget
                 </label>
                 <select
@@ -265,52 +284,40 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                   name="budget"
                   value={formData.budget}
                   onChange={handleChange}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white transition-colors appearance-none"
+                  className={selectClass}
                 >
-                  <option value="" className="bg-[#111]">
-                    Select...
-                  </option>
+                  <option value="" className="bg-[#111]">Select...</option>
                   {BUDGET_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt} className="bg-[#111]">
-                      {opt}
-                    </option>
+                    <option key={opt} value={opt} className="bg-[#111]">{opt}</option>
                   ))}
                 </select>
               </div>
 
-              {/* Message */}
               <div>
-                <label
-                  htmlFor="message"
-                  className="block text-sm text-white/60 mb-1.5"
-                >
+                <label htmlFor="message" className="block text-sm text-white/60 mb-1.5">
                   Message / brief
                 </label>
                 <textarea
                   id="message"
                   name="message"
-                  rows={4}
+                  rows={3}
                   value={formData.message}
                   onChange={handleChange}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-white/25 transition-colors resize-none"
+                  className={`${inputClass} resize-none`}
                   placeholder="Tell us about your project..."
                 />
               </div>
 
-              {/* Error */}
               {formState === "error" && (
-                <p className="text-red-400 text-sm">{errorMessage}</p>
+                <p className="text-red-400 text-sm" role="alert">{errorMessage}</p>
               )}
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={formState === "submitting"}
-                className="w-full bg-brand-teal hover:bg-brand-teal-light text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-brand-teal hover:bg-brand-teal-light text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-brand-teal focus:ring-offset-2 focus:ring-offset-[#111]"
               >
-                {formState === "submitting"
-                  ? "Sending..."
-                  : "Send enquiry"}
+                {formState === "submitting" ? "Sending..." : "Send enquiry"}
               </button>
             </form>
           </>

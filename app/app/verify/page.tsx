@@ -11,6 +11,7 @@ export default function VerifyPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const router = useRouter();
 
@@ -21,28 +22,37 @@ export default function VerifyPage() {
       return;
     }
     setEmail(stored);
-    // Focus first input
-    inputRefs.current[0]?.focus();
+    setTimeout(() => inputRefs.current[0]?.focus(), 100);
   }, [router]);
 
   const handleChange = (index: number, value: string) => {
-    // Only allow digits
     if (value && !/^\d$/.test(value)) return;
 
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Auto-advance to next input
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    // Backspace: clear current and move back
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
+    if (e.key === "Backspace") {
+      if (otp[index]) {
+        // Clear current field
+        const newOtp = [...otp];
+        newOtp[index] = "";
+        setOtp(newOtp);
+        e.preventDefault();
+      } else if (index > 0) {
+        // Move to previous and clear it
+        const newOtp = [...otp];
+        newOtp[index - 1] = "";
+        setOtp(newOtp);
+        inputRefs.current[index - 1]?.focus();
+        e.preventDefault();
+      }
     }
   };
 
@@ -57,7 +67,6 @@ export default function VerifyPage() {
     }
     setOtp(newOtp);
 
-    // Focus the next empty input or last input
     const nextEmpty = newOtp.findIndex((v) => !v);
     inputRefs.current[nextEmpty === -1 ? 5 : nextEmpty]?.focus();
   };
@@ -89,13 +98,13 @@ export default function VerifyPage() {
       }
 
       // Check allowed_users
-      const { data: allowedUser } = await supabase
+      const { data: allowedUser, error: lookupError } = await supabase
         .from("allowed_users")
         .select("email")
         .eq("email", email)
-        .single();
+        .maybeSingle();
 
-      if (!allowedUser) {
+      if (lookupError || !allowedUser) {
         await supabase.auth.signOut();
         sessionStorage.removeItem("otp_email");
         router.push("/login?error=not_authorised");
@@ -113,15 +122,21 @@ export default function VerifyPage() {
   const handleResend = async () => {
     setResending(true);
     setError("");
+    setResent(false);
 
     try {
       const supabase = createClient();
-      await supabase.auth.signInWithOtp({ email });
-      setResending(false);
+      const { error: resendError } = await supabase.auth.signInWithOtp({ email });
+      if (resendError) {
+        setError("Failed to resend code. Try again.");
+      } else {
+        setResent(true);
+        setTimeout(() => setResent(false), 3000);
+      }
     } catch {
       setError("Failed to resend code.");
-      setResending(false);
     }
+    setResending(false);
   };
 
   return (
@@ -136,7 +151,12 @@ export default function VerifyPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* 6-box OTP input */}
-        <div className="flex justify-between gap-2" onPaste={handlePaste}>
+        <div
+          className="flex justify-between gap-1.5 sm:gap-2"
+          role="group"
+          aria-label="One-time password"
+          onPaste={handlePaste}
+        >
           {otp.map((digit, i) => (
             <input
               key={i}
@@ -145,22 +165,23 @@ export default function VerifyPage() {
               }}
               type="text"
               inputMode="numeric"
+              autoComplete={i === 0 ? "one-time-code" : "off"}
               maxLength={1}
               value={digit}
               onChange={(e) => handleChange(i, e.target.value)}
               onKeyDown={(e) => handleKeyDown(i, e)}
-              className="w-full aspect-square max-w-[52px] border border-gray-200 rounded-lg text-center text-xl font-semibold text-gray-900 transition-colors"
-              aria-label={`Digit ${i + 1}`}
+              className="w-full aspect-square max-w-[48px] sm:max-w-[52px] border border-gray-200 rounded-lg text-center text-lg sm:text-xl font-semibold text-gray-900 transition-colors focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal"
+              aria-label={`Digit ${i + 1} of 6`}
             />
           ))}
         </div>
 
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-red-500" role="alert">{error}</p>}
 
         <button
           type="submit"
-          disabled={loading}
-          className="w-full bg-brand-teal hover:bg-brand-teal-light text-white font-semibold py-3 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading || resending}
+          className="w-full bg-brand-teal hover:bg-brand-teal-light text-white font-semibold py-3 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-brand-teal focus:ring-offset-2"
         >
           {loading ? "Verifying..." : "Verify \u2192"}
         </button>
@@ -169,10 +190,10 @@ export default function VerifyPage() {
       <div className="mt-4 text-center">
         <button
           onClick={handleResend}
-          disabled={resending}
+          disabled={resending || loading}
           className="text-xs text-gray-400 hover:text-brand-teal transition-colors disabled:opacity-50"
         >
-          {resending ? "Sending..." : "Resend code"}
+          {resending ? "Sending..." : resent ? "Code sent!" : "Resend code"}
         </button>
       </div>
     </AuthCard>

@@ -10,17 +10,20 @@ export default function Home() {
 
   return (
     <>
-      <section className="relative w-screen h-screen overflow-hidden flex flex-col">
+      <section className="relative w-full h-dvh overflow-hidden flex flex-col">
         <HeroBackground />
 
         {/* Nav */}
-        <nav className="relative z-10 flex items-center justify-between px-6 sm:px-10 py-6">
+        <nav
+          className="relative z-10 flex items-center justify-between px-4 sm:px-10 py-4 sm:py-6"
+          aria-label="Main navigation"
+        >
           <Image
             src="/logo.png"
             alt="Beach Events"
             width={120}
             height={32}
-            className=""
+            className="w-[90px] sm:w-[120px] h-auto"
             priority
           />
           <a
@@ -32,35 +35,33 @@ export default function Home() {
         </nav>
 
         {/* Hero content */}
-        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center">
-          {/* New site coming soon pill */}
-          <span className="pill mb-8">New site coming soon</span>
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 sm:px-6 text-center">
+          <span className="pill mb-6 sm:mb-8">New site coming soon</span>
 
-          <h1 className="font-[family-name:var(--font-heading)] text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight max-w-4xl leading-[1.1] uppercase">
+          <h1 className="font-[family-name:var(--font-heading)] text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight max-w-4xl leading-[1.1] uppercase">
             We put sand where
             <br />
             it doesn&apos;t belong.
           </h1>
-          <p className="mt-6 text-base sm:text-lg text-white/60 whitespace-nowrap">
+          <p className="mt-4 sm:mt-6 text-sm sm:text-lg text-white/60 max-w-xl px-2">
             Beach builds, brand activations and sport environments across the UK.
           </p>
           <button
             onClick={() => setModalOpen(true)}
-            className="mt-10 bg-amber-500 hover:bg-amber-400 text-black font-semibold py-3.5 px-10 rounded-full transition-colors text-sm sm:text-base"
+            className="mt-8 sm:mt-10 bg-amber-500 hover:bg-amber-400 text-black font-semibold py-3 sm:py-3.5 px-8 sm:px-10 rounded-full transition-colors text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-black"
           >
             Get in touch &rarr;
           </button>
         </div>
 
-        {/* Footer — pinned to bottom of viewport */}
-        <div className="relative z-10 flex items-center justify-center px-6 sm:px-10 py-6">
+        {/* Footer */}
+        <div className="relative z-10 flex items-center justify-center px-4 sm:px-10 py-4 sm:py-6">
           <p className="text-xs text-white/30">
             &copy; 2026 Beach Events
           </p>
         </div>
       </section>
 
-      {/* Contact Modal */}
       <ContactModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
     </>
   );

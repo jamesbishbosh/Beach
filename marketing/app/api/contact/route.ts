@@ -36,7 +36,17 @@ export async function POST(request: Request) {
     }
 
     // Write to Supabase
-    const supabase = createServiceClient();
+    let supabase;
+    try {
+      supabase = createServiceClient();
+    } catch (envError) {
+      console.error("Supabase config error:", envError);
+      return NextResponse.json(
+        { error: "Server configuration error" },
+        { status: 500 }
+      );
+    }
+
     const { error: dbError } = await supabase.from("enquiry_submissions").insert({
       full_name: body.fullName.trim(),
       email: body.email.trim(),
@@ -48,7 +58,7 @@ export async function POST(request: Request) {
     });
 
     if (dbError) {
-      console.error("Supabase insert error:", dbError);
+      console.error("Supabase insert error:", dbError.message, dbError.code, dbError.details);
       return NextResponse.json(
         { error: "Failed to save enquiry" },
         { status: 500 }

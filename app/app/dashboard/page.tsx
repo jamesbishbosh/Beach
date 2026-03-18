@@ -12,14 +12,14 @@ export default async function DashboardPage() {
     .from("allowed_users")
     .select("name")
     .eq("email", user?.email ?? "")
-    .single();
+    .maybeSingle();
 
   const firstName = allowedUser?.name?.split(" ")[0] || "there";
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center max-w-md">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 sm:p-12 text-center max-w-md mx-4">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
           Welcome back, {firstName}.
         </h2>
         <p className="text-sm text-gray-400">More coming soon.</p>

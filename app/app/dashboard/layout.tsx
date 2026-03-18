@@ -19,13 +19,17 @@ export default async function DashboardLayout({
   }
 
   // Get user name from allowed_users
-  const { data: allowedUser } = await supabase
+  const { data: allowedUser, error: lookupError } = await supabase
     .from("allowed_users")
     .select("name")
     .eq("email", user.email)
     .single();
 
-  const name = allowedUser?.name || user.email.split("@")[0];
+  if (lookupError || !allowedUser) {
+    redirect("/login?error=not_authorised");
+  }
+
+  const name = allowedUser.name || user.email.split("@")[0];
   const initials = name
     .split(" ")
     .map((n: string) => n[0])
@@ -36,9 +40,9 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-brand-bg">
       <Sidebar userEmail={user.email} />
-      <div className="ml-60">
+      <div className="lg:ml-60">
         <Header title="Dashboard" userInitials={initials} />
-        <main className="p-8">{children}</main>
+        <main className="p-4 sm:p-8">{children}</main>
       </div>
     </div>
   );
